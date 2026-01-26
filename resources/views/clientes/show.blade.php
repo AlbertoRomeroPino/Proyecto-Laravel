@@ -1,28 +1,25 @@
 @extends('layouts.app')
-
 @section('content')
-<div class="card shadow">
-    <div class="card-header bg-primary text-white">
-        <h2>Ficha del Lector: {{ $cliente->nombre }}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>{{ $cliente->nombre }}</h3>
+        <a href="{{ route('clientes.index') }}" class="btn btn-secondary">&larr; Volver</a>
     </div>
-    <div class="card-body">
-        <p><strong>Email:</strong> {{ $cliente->email }}</p>
-        <p><strong>Dirección:</strong> {{ $cliente->direccion }}</p>
-        <hr>
-        <h4>Historial de Pedidos de Manga</h4>
-        @if($cliente->pedidos->count() > 0)
-            <ul class="list-group">
-                @foreach($cliente->pedidos as $pedido)
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Pedido: {{ $pedido->numero_pedido }} - {{ $pedido->fecha }}
-                        <span class="badge bg-success rounded-pill">{{ $pedido->total }}€</span>
-                    </li>
-                @endforeach
-            </ul>
-        @else
-            <p class="text-muted">Este cliente aún no ha realizado pedidos.</p>
-        @endif
-        <a href="{{ route('clientes.index') }}" class="btn btn-secondary mt-3">Volver al listado</a>
+    <div class="card mb-4">
+        <div class="card-body">
+            <p>Email: {{ $cliente->email }} | Tel: {{ $cliente->telefono }}</p>
+        </div>
     </div>
-</div>
+    <h4>Historial de Compras de Manga</h4>
+    <table class="table table-sm">
+        <thead> <tr> <th>Nº Pedido</th> <th>Total</th> <th>Estado</th> </tr> </thead>
+        <tbody>
+            @foreach($cliente->pedidos as $pedido)
+            <tr>
+                <td>{{ $pedido->numero_pedido }}</td>
+                <td>{{ $pedido->total }} €</td>
+                <td><span class="badge bg-secondary">{{ $pedido->estado }}</span></td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 @endsection

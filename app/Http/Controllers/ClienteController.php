@@ -23,7 +23,7 @@ class ClienteController extends Controller
      */
     public function create()
     {
-        //
+        return view('clientes.create');
     }
 
     /**
@@ -31,7 +31,15 @@ class ClienteController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'email' => 'required|email|unique:clientes,email',
+            'telefono' => 'required',
+            'direccion' => 'required',
+        ]);
+
+        Cliente::create($request->all());
+        return redirect()->route('clientes.index')->with('success', 'Lector registrado con éxito.');
     }
 
     /**
@@ -48,7 +56,7 @@ class ClienteController extends Controller
      */
     public function edit(Cliente $cliente)
     {
-        //
+        return view('clientes.edit', compact('cliente'));
     }
 
     /**
@@ -56,7 +64,13 @@ class ClienteController extends Controller
      */
     public function update(Request $request, Cliente $cliente)
     {
-        //
+        $request->validate([
+            'nombre' => 'required',
+            'email' => 'required|email|unique:clientes,email,' . $cliente->id,
+        ]);
+
+        $cliente->update($request->all());
+        return redirect()->route('clientes.index')->with('success', 'Datos del lector actualizados.');
     }
 
     /**
@@ -64,6 +78,7 @@ class ClienteController extends Controller
      */
     public function destroy(Cliente $cliente)
     {
-        //
+        $cliente->delete();
+        return redirect()->route('clientes.index')->with('success', 'Lector eliminado.');
     }
 }

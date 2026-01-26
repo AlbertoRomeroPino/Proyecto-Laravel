@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pedido;
 use Illuminate\Http\Request;
+use App\Models\Cliente;
 
 class PedidoController extends Controller
 {
@@ -22,7 +23,8 @@ class PedidoController extends Controller
      */
     public function create()
     {
-        //
+        $clientes = Cliente::all(); // Traemos todos los lectores para el select
+        return view('pedidos.create', compact('clientes'));
     }
 
     /**
@@ -30,7 +32,18 @@ class PedidoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'numero_pedido' => 'required|unique:pedidos,numero_pedido',
+            'cliente_id' => 'required|exists:clientes,id',
+            'total' => 'required|numeric|min:0',
+            'fecha' => 'required|date',
+            'estado' => 'required|in:pendiente,enviado,entregado,cancelado',
+        ]);
+
+        Pedido::create($validated);
+
+        return redirect()->route('pedidos.index')
+            ->with('success', '¡El nuevo pedido ha sido registrado correctamente!');
     }
 
     /**
@@ -38,7 +51,7 @@ class PedidoController extends Controller
      */
     public function show(Pedido $pedido)
     {
-        //
+        return view('pedidos.show', compact('pedido'));
     }
 
     /**
@@ -46,7 +59,7 @@ class PedidoController extends Controller
      */
     public function edit(Pedido $pedido)
     {
-        //
+        return view('pedidos.edit', compact('pedido'));
     }
 
     /**
@@ -54,7 +67,15 @@ class PedidoController extends Controller
      */
     public function update(Request $request, Pedido $pedido)
     {
-        //
+        $validated = $request->validate([
+            'total' => 'required|numeric|min:0',
+            'fecha' => 'required|date',
+            'estado' => 'required|in:pendiente,enviado,entregado,cancelado',
+        ]);
+
+        $pedido->update($validated);
+
+        return redirect()->route('pedidos.index')->with('success', 'Pedido actualizado correctamente.');
     }
 
     /**
@@ -62,6 +83,7 @@ class PedidoController extends Controller
      */
     public function destroy(Pedido $pedido)
     {
-        //
+        $pedido->delete();
+        return redirect()->route('pedidos.index')->with('success', 'Pedido eliminado del sistema.');
     }
 }

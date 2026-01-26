@@ -215,7 +215,7 @@ public function definition(): array {
 
 Usamos la librería  **Faker** , que es como un generador de identidades falsas. Nos crea nombres, emails, teléfonos y direcciones que parecen reales pero son aleatorios. El campo `activo` lo dejamos en `true` por defecto.
 
-## PedidoFactory
+### PedidoFactory
 
 ```php
  public function definition(): array
@@ -230,7 +230,7 @@ Usamos la librería  **Faker** , que es como un generador de identidades falsas.
     }
 ```
 
-### DatabaseSeeder
+## DatabaseSeeder
 
 ```php
 public function run(): void {
@@ -289,7 +289,7 @@ Los otros comandos son para crear las capetas de las vistas
 >
 > Los blade.php los e creado a mano por eso no saldra el `php artisan make: view`
 
-### ClienteController.php
+## ClienteController.php
 
 ```php
 public function index() {
@@ -304,7 +304,7 @@ public function show(Cliente $cliente) {
 
 He optado por programar únicamente los métodos `index` y `show` por una razón de seguridad técnica:  validar la capa de persistencia . Antes de construir formularios complejos para crear o editar datos.
 
-### PedidoController.php
+## PedidoController.php
 
 ```php
 public function index() {
@@ -315,3 +315,46 @@ public function index() {
 ```
 
 He implementado únicamente el método `index` para validar la eficiencia de las relaciones mediante  Eager Loading .
+
+# Diario de Trabajo: Dia 4
+
+## Terminar `ClienteController.php`
+
+```php
+public function create() {
+    return view('clientes.create');
+}
+
+public function store(Request $request) {
+    $request->validate([
+        'nombre' => 'required|string|max:255',
+        'email' => 'required|email|unique:clientes,email',
+        'telefono' => 'required',
+        'direccion' => 'required',
+    ]);
+
+    Cliente::create($request->all());
+    return redirect()->route('clientes.index')->with('success', 'Lector registrado con éxito.');
+}
+
+public function edit(Cliente $cliente) {
+    return view('clientes.edit', compact('cliente'));
+}
+
+public function update(Request $request, Cliente $cliente) {
+    $request->validate([
+        'nombre' => 'required',
+        'email' => 'required|email|unique:clientes,email,' . $cliente->id,
+    ]);
+
+    $cliente->update($request->all());
+    return redirect()->route('clientes.index')->with('success', 'Datos del lector actualizados.');
+}
+
+public function destroy(Cliente $cliente) {
+    $cliente->delete();
+    return redirect()->route('clientes.index')->with('success', 'Lector eliminado.');
+}
+```
+
+layouts/app.blade.php
