@@ -12,8 +12,11 @@ class ClienteController extends Controller
      */
     public function index()
     {
-        //
+        $clientes = Cliente::all();
+        return view('clientes.index', compact('clientes'));
     }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -36,7 +39,8 @@ class ClienteController extends Controller
      */
     public function show(Cliente $cliente)
     {
-        //
+        // Importante: Laravel hace el Route Model Binding automáticamente
+        return view('clientes.show', compact('cliente'));
     }
 
     /**

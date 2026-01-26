@@ -8,7 +8,6 @@
 
 * **La M (Migración):** El plano para crear la tabla en la base de datos.
 * **La C (Controlador):** El "cerebro" que recibe las peticiones de los usuarios.
-
 * **La R (Recurso):** Hace que ese controlador ya venga con los métodos estándar para ver, crear, editar y borrar (el famoso CRUD) ya escritos, para que no tengas que crearlos tú uno a uno.
 
 **Uso real**: Se utiliza para  **ahorrar tiempo y evitar errores de nombres** .
@@ -27,7 +26,7 @@
 
 **Uso real** : `$pedido->cliente` (nos devuelve los datos del cliente que hizo esa compra).
 
-## Faker: Datos de prueba
+### Faker: Datos de prueba
 
  **¿Para qué sirve?** : Genera datos falsos (nombres, emails) automáticamente para no tener que inventarlos y escribirlos tú a mano.
  **Uso real** : Rellena la base de datos en un segundo para probar que el diseño de la web funciona bien con mucha información.
@@ -50,6 +49,27 @@ Concretamente son estas 7 usando la entidad cliente:
 | `/clientes/{id}/edit`    | GET               | Abre el formulario con los datos ya rellenos para cambiarlos.       |
 | `/clientes/{id}`         | PUT               | Es la dirección que procesa los cambios que has editado.           |
 | `/clientes/{id}`         | DELETE            | La dirección que se encarga de borrar a ese cliente.               |
+
+## Dia 3
+
+### migrate:fresh
+
+```powershell
+php artisan migrate:fresh --seed
+```
+
+**¿Para qué sirve?** : El comando ejecuta una secuencia destructiva-constructiva: primero ejecuta un `DROP ALL TABLES` (eliminando tablas, índices y vistas sin importar las restricciones de integridad), luego recompila el esquema SQL ejecutando cronológicamente todos los métodos `up()` de tus migraciones, y finalmente dispara el `DatabaseSeeder` para realizar operaciones de `INSERT` masivas.
+
+**Uso real** : Se utiliza principalmente en entornos de desarrollo cuando el esquema de la base de datos se ha vuelto "pesado" o inconsistente debido a cambios constantes en los requerimientos.
+
+> **❗PELIGRO: IMPACTO CRÍTICO**
+> Impacto Crítico: Este comando ejecuta un DROP ALL TABLES antes de migrar. Úsalo solo en desarrollo local. Ejecutarlo en producción borrará permanentemente los datos de los clientes y la estructura de la base de datos.
+
+### witch (Eager Loading)
+
+ **¿Para qué sirve?** : Para cargar relaciones de forma Eager. Su función técnica es indicarle a Laravel que debe traer los datos del modelo relacionado en una única consulta SQL (usando un `JOIN` o un `IN`), evitando así el problema de las  consultas N+1 .
+
+ **Uso real** : `$pedidos = Pedido::with('cliente')->get();` (En la lista de ventas de MangaStore, permite mostrar el nombre de cada lector junto a su pedido de manga realizando solo 2 consultas a la base de datos, en lugar de hacer una consulta nueva por cada pedido que aparezca en la lista).
 
 # Diario de Trabajo: Dia 1
 
@@ -157,8 +177,6 @@ class Cliente extends Model {
 }
 ```
 
-
-
 * **`$fillable`** : Es una medida de seguridad. Aquí ponemos los campos que permitimos que se rellenen.
 * **Relación `pedidos()`** : Aquí le decimos a Laravel que un cliente puede tener muchos pedidos. Gracias a esto, luego podremos sacar los pedidos de alguien con un simple `$cliente->pedidos`.
 
@@ -195,9 +213,22 @@ public function definition(): array {
 }
 ```
 
-
-
 Usamos la librería  **Faker** , que es como un generador de identidades falsas. Nos crea nombres, emails, teléfonos y direcciones que parecen reales pero son aleatorios. El campo `activo` lo dejamos en `true` por defecto.
+
+## PedidoFactory
+
+```php
+ public function definition(): array
+    {
+        return [
+            'numero_pedido' => 'MNGA-' . $this->faker->unique()->numberBetween(1000, 9999),
+            'fecha' => now(),
+            'estado' => $this->faker->randomElement(['pendiente', 'enviado', 'entregado']),
+            'total' => $this->faker->randomFloat(2, 10, 200),
+            'notas' => $this->faker->sentence(),
+        ];
+    }
+```
 
 ### DatabaseSeeder
 
@@ -210,8 +241,6 @@ public function run(): void {
     });
 }
 ```
-
-
 
 Este es el "botón de encendido" de nuestros datos de prueba. Lo que hace el código es:
 
@@ -233,4 +262,56 @@ Route::resource('pedidos', PedidoController::class);
 
 **`Route::resource`**:
 Esta línea es un "atajo" que crea automáticamente las 7 rutas típicas de un CRUD (Index, Create, Store, Show, Edit, Update, Destroy). Es mucho más limpio y sigue el estándar de Laravel.
-"# Proyecto-Laravel" 
+
+# Diario de Trabajo: Dia 3
+
+## Modificaciones del model
+
+lo que vamos a añadir a los dos modelos es encima del `$fillable` una pequeña linea para usar el factory: `use HasFactory;`
+
+## Comandos por terminal
+
+```bash
+# Refrescar la base de datos y ejecutar los seeders
+php artisan migrate:fresh --seed
+
+# Para crear las carpetas de las vistas
+mkdir resources\views\clientes
+mkdir resources\views\pedidos
+mkdir resources\views\layouts
+```
+
+El primer comando su funcion principal es borrar la base de datos y crear la base de datos con los datos que esten en migrate. esto es muy util pero tambien muy peligroso si se usa por error porque borra todo de golpe.
+
+Los otros comandos son para crear las capetas de las vistas
+
+> ⚠️Aclaración
+>
+> Los blade.php los e creado a mano por eso no saldra el `php artisan make: view`
+
+### ClienteController.php
+
+```php
+public function index() {
+    $clientes = Cliente::all();
+    return view('clientes.index', compact('clientes'));
+}
+
+public function show(Cliente $cliente) {
+    return view('clientes.show', compact('cliente'));
+}
+```
+
+He optado por programar únicamente los métodos `index` y `show` por una razón de seguridad técnica:  validar la capa de persistencia . Antes de construir formularios complejos para crear o editar datos.
+
+### PedidoController.php
+
+```php
+public function index() {
+    // Usamos 'with' para que la consulta sea más eficiente
+    $pedidos = Pedido::with('cliente')->get();
+    return view('pedidos.index', compact('pedidos'));
+}
+```
+
+He implementado únicamente el método `index` para validar la eficiencia de las relaciones mediante  Eager Loading .

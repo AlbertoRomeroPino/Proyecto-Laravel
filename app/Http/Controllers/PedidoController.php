@@ -12,7 +12,9 @@ class PedidoController extends Controller
      */
     public function index()
     {
-        //
+        // Usamos 'with' para que la consulta sea más eficiente (Eager Loading)
+        $pedidos = Pedido::with('cliente')->get();
+        return view('pedidos.index', compact('pedidos'));
     }
 
     /**
