@@ -13,11 +13,15 @@
         </div>
         <div class="stat-card">
             <h4>Pedidos Pendientes</h4>
-            <div class="stat-number">{{ $pedidos->where('estado', 'pending')->count() }}</div>
+            <div class="stat-number">{{ $pedidos->where('estado', 'pendiente')->count() }}</div>
         </div>
         <div class="stat-card">
-            <h4>Pedidos Completados</h4>
-            <div class="stat-number">{{ $pedidos->where('estado', 'completed')->count() }}</div>
+            <h4>Pedidos Enviados</h4>
+            <div class="stat-number">{{ $pedidos->where('estado', 'enviado')->count() }}</div>
+        </div>
+        <div class="stat-card">
+            <h4>Pedidos Entregados</h4>
+            <div class="stat-number">{{ $pedidos->where('estado', 'entregado')->count() }}</div>
         </div>
     </div>
 
