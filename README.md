@@ -1,3 +1,17 @@
+# Manga Store - Diario de Desarrollo
+
+## Resumen por Día
+
+**Día 1:** Creación del proyecto Laravel, modelos (Cliente y Pedido), migraciones y controladores CRUD. Factories y seeders para datos de prueba.
+
+**Día 2:** Definición de relaciones entre modelos (`hasMany` y `belongsTo`). Implementación de factories con Faker. Seeder para llenar la base de datos automáticamente. Rutas con `Route::resource`.
+
+**Día 3:** Uso de `HasFactory` en modelos. Comando `migrate:fresh --seed`. Implementación de métodos `index()` y `show()` en controladores. Introducción a Eager Loading con `with()`.
+
+**Día 4:** Completación del CRUD en ambos controladores. Sistema de validaciones. Route Model Binding. Métodos `create()`, `store()`, `edit()`, `update()`, `destroy()`.
+
+---
+
 # Cosas aprendidas:
 
 ## Dia 1
@@ -318,13 +332,23 @@ He implementado únicamente el método `index` para validar la eficiencia de las
 
 # Diario de Trabajo: Dia 4
 
-## Terminar `ClienteController.php`
+En este día completamos los controladores para tener un CRUD funcional completo. Implementamos tanto en `ClienteController` como en `PedidoController` todos los métodos necesarios para gestionar el ciclo de vida de la información.
+
+## ClienteController Completado
+
+### Método `create()`
 
 ```php
 public function create() {
     return view('clientes.create');
 }
+```
 
+Simplemente abre el formulario vacío para que el usuario pueda escribir los datos de un nuevo cliente.
+
+### Método `store()`
+
+```php
 public function store(Request $request) {
     $request->validate([
         'nombre' => 'required|string|max:255',
@@ -336,11 +360,28 @@ public function store(Request $request) {
     Cliente::create($request->all());
     return redirect()->route('clientes.index')->with('success', 'Lector registrado con éxito.');
 }
+```
 
+* **`validate()`** : Verifica que los datos cumplen las reglas. Si no, rechaza automáticamente la petición.
+
+- **`unique:clientes,email`** : Asegura que no hay otro cliente con ese email.
+- **`Cliente::create()`** : Guarda directamente en la base de datos.
+- **`redirect()->route()`** : Redirige a la lista de clientes después de guardar.
+- **`with('success',...)`** : Envía un mensaje de éxito a la vista.
+
+### Método `edit()`
+
+```php
 public function edit(Cliente $cliente) {
     return view('clientes.edit', compact('cliente'));
 }
+```
 
+Abre el formulario pero con los datos del cliente ya rellenos (gracias al Route Model Binding).
+
+### Método `update()`
+
+```php
 public function update(Request $request, Cliente $cliente) {
     $request->validate([
         'nombre' => 'required',
@@ -350,11 +391,117 @@ public function update(Request $request, Cliente $cliente) {
     $cliente->update($request->all());
     return redirect()->route('clientes.index')->with('success', 'Datos del lector actualizados.');
 }
+```
 
+* **`unique:clientes,email,' . $cliente->id`** : Permite que el email sea el mismo si pertenece al mismo cliente. Si el usuario cambia el email, verifica que el nuevo no esté en uso.
+
+- **`$cliente->update()`** : Actualiza solo los campos que vienen en el request.
+
+### Método `destroy()`
+
+```php
 public function destroy(Cliente $cliente) {
     $cliente->delete();
     return redirect()->route('clientes.index')->with('success', 'Lector eliminado.');
 }
 ```
 
-layouts/app.blade.php
+Borra el cliente y redirige a la lista. Si tiene pedidos asociados, se borran automáticamente por la regla `onDelete('cascade')` que pusimos en la migración.
+
+## PedidoController Completado
+
+### Método `create()`
+
+```php
+public function create() {
+    $clientes = Cliente::all(); // Traemos todos los lectores para el select
+    return view('pedidos.create', compact('clientes'));
+}
+```
+
+Abre el formulario para crear un nuevo pedido. Trae la lista de clientes para que el usuario seleccione a quién pertenece el pedido.
+
+### Método `store()`
+
+```php
+public function store(Request $request) {
+    $validated = $request->validate([
+        'numero_pedido' => 'required|unique:pedidos,numero_pedido',
+        'cliente_id' => 'required|exists:clientes,id',
+        'total' => 'required|numeric|min:0',
+        'fecha' => 'required|date',
+        'estado' => 'required|in:pendiente,enviado,entregado,cancelado',
+    ]);
+
+    Pedido::create($validated);
+
+    return redirect()->route('pedidos.index')
+        ->with('success', '¡El nuevo pedido ha sido registrado correctamente!');
+}
+```
+
+- **`numero_pedido`** : Debe ser único (no pueden haber dos pedidos con el mismo número).
+- **`exists:clientes,id`** : Valida que el cliente seleccionado realmente existe en la base de datos.
+- **`in:pendiente,enviado,entregado,cancelado`** : Solo permite estos 4 estados posibles.
+- **`$validated`** : Guardamos los datos validados en una variable para mayor seguridad.
+
+### Método `show()`
+
+```php
+public function show(Pedido $pedido) {
+    return view('pedidos.show', compact('pedido'));
+}
+```
+
+Muestra los detalles de un pedido específico. Gracias a la relación `belongsTo`, podemos acceder al cliente del pedido con `$pedido->cliente` en la vista.
+
+### Método `edit()`
+
+```php
+public function edit(Pedido $pedido) {
+    return view('pedidos.edit', compact('pedido'));
+}
+```
+
+Abre el formulario de edición con los datos del pedido ya rellenos.
+
+### Método `update()`
+
+```php
+public function update(Request $request, Pedido $pedido) {
+    $validated = $request->validate([
+        'total' => 'required|numeric|min:0',
+        'fecha' => 'required|date',
+        'estado' => 'required|in:pendiente,enviado,entregado,cancelado',
+    ]);
+
+    $pedido->update($validated);
+
+    return redirect()->route('pedidos.index')->with('success', 'Pedido actualizado correctamente.');
+}
+```
+
+Actualiza el pedido. Notamos que NO validamos `numero_pedido` ni `cliente_id` porque esos datos no deben cambiar una vez creados (son identificadores). Solo se pueden editar el total, la fecha y el estado.
+
+### Método `destroy()`
+
+```php
+public function destroy(Pedido $pedido) {
+    $pedido->delete();
+    return redirect()->route('pedidos.index')->with('success', 'Pedido eliminado del sistema.');
+}
+```
+
+Borra el pedido de la base de datos y redirige a la lista.
+
+## Pantalla de Inicio
+
+En `routes/web.php` añadimos una ruta raíz para la pantalla de bienvenida:
+
+```php
+Route::get('/', function () {
+    return view('welcome');
+});
+```
+
+Cuando el usuario accede a `http://localhost/`, se muestra la vista `welcome.blade.php`. Esta es la puerta de entrada a nuestra aplicación.

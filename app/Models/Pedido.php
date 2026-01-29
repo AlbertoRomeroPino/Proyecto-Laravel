@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Pedido extends Model {
     use HasFactory;
     protected $fillable = ['numero_pedido', 'fecha', 'estado', 'total', 'notas', 'cliente_id'];
+    protected $casts = [
+        'fecha' => 'date',
+    ];
 
     // Un pedido pertenece a un cliente
     public function cliente() {

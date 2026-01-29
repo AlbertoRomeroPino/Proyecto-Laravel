@@ -16,8 +16,6 @@ class ClienteController extends Controller
         return view('clientes.index', compact('clientes'));
     }
 
-
-
     /**
      * Show the form for creating a new resource.
      */
