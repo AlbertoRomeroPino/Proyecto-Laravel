@@ -1,3 +1,7 @@
+# Video final
+
+[Video](https://drive.google.com/file/d/1HLVUGlhELlyCiomvQi54J96pvBmKCIQQ/view?usp=sharing)
+
 # Manga Store - Diario de Desarrollo
 
 ## Resumen por Día
